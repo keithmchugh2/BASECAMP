@@ -107,6 +107,17 @@ def create_app():
                 ("BASECAMP Admin", admin_email, generate_password_hash(admin_password), now),
             )
             db.commit()
+        else:
+            # Keep admin credentials in sync with Render env vars so you can recover access quickly.
+            db.execute(
+                """
+                UPDATE users
+                SET password_hash = ?, is_paid = 1, is_admin = 1
+                WHERE email = ?
+                """,
+                (generate_password_hash(admin_password), admin_email),
+            )
+            db.commit()
         db.close()
 
     init_db()
