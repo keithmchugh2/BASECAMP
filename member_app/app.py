@@ -406,6 +406,46 @@ def create_app():
         # Kept as stub for now because live Stripe secret and webhook signing key are environment-specific.
         return {"ok": True, "message": "Stripe webhook endpoint is ready for integration."}
 
+    @app.route("/bootstrap/reset-admin", methods=["GET", "POST"])
+    def bootstrap_reset_admin():
+        setup_key = os.getenv("BASECAMP_SETUP_KEY", "")
+        provided_key = request.args.get("key", "")
+        if not setup_key or provided_key != setup_key:
+            return {"ok": False, "error": "Unauthorized"}, 401
+
+        if request.method == "POST":
+            email = request.form.get("email", "").strip().lower()
+            password = request.form.get("password", "")
+            if not email or not password:
+                flash("Email and password are required.", "warning")
+                return render_template("bootstrap_reset_admin.html")
+
+            db = get_db()
+            user = db.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+            now = datetime.utcnow().isoformat(timespec="seconds")
+            if user:
+                db.execute(
+                    """
+                    UPDATE users
+                    SET password_hash = ?, is_paid = 1, is_admin = 1
+                    WHERE email = ?
+                    """,
+                    (generate_password_hash(password), email),
+                )
+            else:
+                db.execute(
+                    """
+                    INSERT INTO users (full_name, email, password_hash, is_paid, is_admin, mastermind_opt_in, created_at)
+                    VALUES (?, ?, ?, 1, 1, 1, ?)
+                    """,
+                    ("BASECAMP Admin", email, generate_password_hash(password), now),
+                )
+            db.commit()
+            flash("Admin credentials reset. You can now log in.", "success")
+            return redirect(url_for("login"))
+
+        return render_template("bootstrap_reset_admin.html")
+
     return app
 
 

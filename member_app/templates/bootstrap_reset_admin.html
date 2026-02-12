@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Reset Admin | BASECAMP{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Reset Admin Access</h1>
+  <p class="muted">Use this one-time protected page to reset admin login credentials.</p>
+  <form method="post" class="stack">
+    <label>Admin Email<input name="email" type="email" required /></label>
+    <label>New Password<input name="password" type="password" required /></label>
+    <button type="submit">Reset Admin Credentials</button>
+  </form>
+</section>
+{% endblock %}
