@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 data/
+.venv/
+member_app/basecamp_app.db

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard | BASECAMP{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Welcome, {{ current_user['full_name'] }}</h1>
+  <p class="muted">Member status: <strong>{% if current_user['is_paid'] or current_user['is_admin'] %}Paid Active{% else %}Pending Activation{% endif %}</strong></p>
+  <div class="kpis">
+    <div><h3>{{ my_workouts|length }}</h3><p>Recent Workouts</p></div>
+    <div><h3>{{ upcoming_events|length }}</h3><p>Upcoming Events</p></div>
+    <div><h3>{{ mastermind_count }}</h3><p>Mastermind Posts</p></div>
+  </div>
+</section>
+
+<section class="grid-2">
+  <article class="card">
+    <h2>Recent Workouts</h2>
+    {% if my_workouts %}
+      <ul>
+      {% for item in my_workouts %}
+        <li><strong>{{ item['title'] }}</strong> {% if item['week_label'] %}<span class="muted">({{ item['week_label'] }})</span>{% endif %}</li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No workouts assigned yet.</p>
+    {% endif %}
+  </article>
+
+  <article class="card">
+    <h2>Upcoming Events</h2>
+    {% if upcoming_events %}
+      <ul>
+      {% for event in upcoming_events %}
+        <li><strong>{{ event['title'] }}</strong> <span class="muted">{{ event['event_date'] or 'Date TBD' }}</span></li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No events posted yet.</p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}

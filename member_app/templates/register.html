@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Register | BASECAMP{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Create Account</h1>
+  <form method="post" class="stack">
+    <label>Full Name<input name="full_name" required /></label>
+    <label>Email<input name="email" type="email" required /></label>
+    <label>Password<input name="password" type="password" required /></label>
+    <button type="submit">Create Account</button>
+  </form>
+  <p class="muted">After signup, Keith can activate paid-member access.</p>
+</section>
+{% endblock %}

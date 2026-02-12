@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: basecamp-member-app
+    env: python
+    plan: starter
+    buildCommand: "pip install -r requirements-member-app.txt"
+    startCommand: "python member_app/app.py"
+    autoDeploy: true
+    healthCheckPath: /login
+    envVars:
+      - key: BASECAMP_APP_SECRET
+        generateValue: true
+      - key: BASECAMP_ADMIN_EMAIL
+        value: basecampconsultants@gmail.com
+      - key: BASECAMP_ADMIN_PASSWORD
+        sync: false
+      - key: BASECAMP_STRIPE_PRICE_ID
+        sync: false
+      - key: BASECAMP_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: BASECAMP_STRIPE_WEBHOOK_SECRET
+        sync: false

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Admin | BASECAMP{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Admin Console</h1>
+  <p class="muted">Manage members, resources, workouts, and events.</p>
+</section>
+
+<section class="grid-2">
+  <article class="card">
+    <h2>Member Access</h2>
+    <div class="stack">
+      {% for u in users %}
+      <form method="post" class="inline-form">
+        <input type="hidden" name="form_type" value="member_status" />
+        <input type="hidden" name="user_id" value="{{ u['id'] }}" />
+        <div>
+          <strong>{{ u['full_name'] }}</strong><br />
+          <span class="muted">{{ u['email'] }}</span>
+        </div>
+        <label><input type="checkbox" name="is_paid" {% if u['is_paid'] %}checked{% endif %}/> Paid</label>
+        <label><input type="checkbox" name="is_admin" {% if u['is_admin'] %}checked{% endif %}/> Admin</label>
+        <button type="submit">Save</button>
+      </form>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="card">
+    <h2>Add Resource</h2>
+    <form method="post" class="stack">
+      <input type="hidden" name="form_type" value="resource" />
+      <label>Title<input name="title" required /></label>
+      <label>Description<textarea name="description" rows="3"></textarea></label>
+      <label>URL<input name="url" type="url" placeholder="https://..." required /></label>
+      <button type="submit">Add Resource</button>
+    </form>
+  </article>
+</section>
+
+<section class="grid-2">
+  <article class="card">
+    <h2>Assign Workout</h2>
+    <form method="post" class="stack">
+      <input type="hidden" name="form_type" value="workout" />
+      <label>Workout Title<input name="title" required /></label>
+      <label>Week / Phase Label<input name="week_label" placeholder="Week 1" /></label>
+      <label>Workout Details<textarea name="details" rows="6" required></textarea></label>
+      <label>Assign To
+        <select name="target_user" required>
+          <option value="ALL_PAID">All Paid Members</option>
+          {% for u in users %}
+          <option value="{{ u['id'] }}">{{ u['full_name'] }} ({{ u['email'] }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit">Assign Workout</button>
+    </form>
+  </article>
+
+  <article class="card">
+    <h2>Publish Event</h2>
+    <form method="post" class="stack">
+      <input type="hidden" name="form_type" value="event" />
+      <label>Title<input name="title" required /></label>
+      <label>Details<textarea name="details" rows="4" required></textarea></label>
+      <label>Date<input name="event_date" placeholder="2026-04-20" /></label>
+      <label>Location<input name="location" /></label>
+      <label>Signup URL<input name="signup_url" type="url" placeholder="https://..." /></label>
+      <button type="submit">Publish Event</button>
+    </form>
+  </article>
+</section>
+
+<section class="grid-2">
+  <article class="card">
+    <h2>Recent Resources</h2>
+    <ul>
+      {% for r in resources %}
+      <li>{{ r['title'] }}</li>
+      {% endfor %}
+    </ul>
+  </article>
+  <article class="card">
+    <h2>Recent Events</h2>
+    <ul>
+      {% for e in events %}
+      <li>{{ e['title'] }}</li>
+      {% endfor %}
+    </ul>
+  </article>
+</section>
+{% endblock %}

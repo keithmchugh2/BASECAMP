@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}My Workouts | BASECAMP{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>My Custom Workouts</h1>
+  <p class="muted">Workouts assigned specifically to you by Keith.</p>
+  {% if items %}
+  <div class="stack">
+    {% for item in items %}
+    <article class="item">
+      <h3>{{ item['title'] }}</h3>
+      {% if item['week_label'] %}<p><strong>{{ item['week_label'] }}</strong></p>{% endif %}
+      <p>{{ item['details'] }}</p>
+      <p class="muted">Assigned {{ item['created_at'] }}</p>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="muted">No workouts assigned yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

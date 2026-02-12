@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Mastermind | BASECAMP{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Mastermind Group</h1>
+  <p class="muted">Opt in to connect with other paying members for accountability and support.</p>
+
+  {% if not current_user['mastermind_opt_in'] %}
+    <form method="post" class="stack">
+      <input type="hidden" name="action" value="opt_in" />
+      <button type="submit">Opt Into Mastermind</button>
+    </form>
+  {% else %}
+    <form method="post" class="stack">
+      <input type="hidden" name="action" value="post" />
+      <label>Share with the group
+        <textarea name="content" rows="4" placeholder="Wins, challenges, lessons, or requests for support" required></textarea>
+      </label>
+      <button type="submit">Post To Group</button>
+    </form>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Recent Mastermind Posts</h2>
+  {% if posts %}
+    <div class="stack">
+      {% for post in posts %}
+      <article class="item">
+        <p>{{ post['content'] }}</p>
+        <p class="muted">{{ post['full_name'] }} • {{ post['created_at'] }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">No posts yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

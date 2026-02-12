@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Tools & Docs | BASECAMP{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Tools & Documents</h1>
+  <p class="muted">Member-only resources, worksheets, and playbooks.</p>
+  {% if items %}
+  <div class="stack">
+    {% for item in items %}
+    <article class="item">
+      <h3>{{ item['title'] }}</h3>
+      <p>{{ item['description'] }}</p>
+      <a href="{{ item['url'] }}" target="_blank" rel="noreferrer">Open resource</a>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="muted">No resources posted yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Events | BASECAMP{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Upcoming Retreats & Events</h1>
+  <p class="muted">Stay updated on upcoming BASECAMP retreats, workshops, and group events.</p>
+  {% if items %}
+    <div class="stack">
+      {% for event in items %}
+      <article class="item">
+        <h3>{{ event['title'] }}</h3>
+        <p>{{ event['details'] }}</p>
+        <p class="muted">{{ event['event_date'] or 'Date TBD' }}{% if event['location'] %} • {{ event['location'] }}{% endif %}</p>
+        {% if event['signup_url'] %}<a href="{{ event['signup_url'] }}" target="_blank" rel="noreferrer">RSVP / Learn More</a>{% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">No events posted yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

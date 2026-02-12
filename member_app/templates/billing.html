@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Billing | BASECAMP{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Billing & Membership</h1>
+  <p class="muted">Stripe checkout wiring is prepared in backend config for paid member activation.</p>
+  <ul>
+    <li>Set <code>BASECAMP_STRIPE_PRICE_ID</code> and <code>BASECAMP_STRIPE_PUBLISHABLE_KEY</code></li>
+    <li>Connect Stripe webhook to <code>/webhooks/stripe</code></li>
+    <li>On successful payment, mark member paid in admin or webhook mapping</li>
+  </ul>
+</section>
+{% endblock %}
