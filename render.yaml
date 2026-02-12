@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: basecamp-site
+    env: python
+    plan: starter
+    buildCommand: "echo 'No build step required'"
+    startCommand: "python server.py"
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: BASECAMP_DISCOVERY_TO
+        value: basecampconsultants@gmail.com
+      - key: BASECAMP_SMTP_HOST
+        value: smtp.gmail.com
+      - key: BASECAMP_SMTP_PORT
+        value: "465"
+      - key: BASECAMP_GMAIL_USER
+        value: basecampconsultants@gmail.com
+      - key: BASECAMP_GMAIL_APP_PASSWORD
+        sync: false

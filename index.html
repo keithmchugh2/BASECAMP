@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BASECAMP | Build Discipline That Lasts</title>
+    <meta
+      name="description"
+      content="BASECAMP helps adults in their 20s-50s build discipline through movement, mindset, and accountability. Book a free discovery call."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Manrope:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="logo-wrap">
+        <p class="kicker">BASECAMP</p>
+        <p class="sub-kicker">Movement. Mindset. Discipline.</p>
+      </div>
+      <a class="btn btn-ghost" href="#discovery-call">Free Discovery Call</a>
+    </header>
+
+    <main>
+      <section class="hero" id="top">
+        <div class="hero-copy">
+          <p class="eyebrow">8-Week Coaching Experience</p>
+          <h1>Build your foundation. Own your days. Move with intent.</h1>
+          <p>
+            BASECAMP is for adults who are ready to build structure, stronger habits,
+            and the discipline to perform better in family life, career, and health.
+          </p>
+          <div class="cta-row">
+            <a class="btn" href="#discovery-call">Set Up a Free Discovery Call</a>
+            <a class="btn btn-ghost" href="#framework">See MOVE Framework</a>
+          </div>
+        </div>
+        <div class="hero-image-wrap">
+          <img
+            src="Insta%20Teaser%20Image.jpg"
+            alt="BASECAMP coaching preview"
+            class="hero-image"
+          />
+        </div>
+      </section>
+
+      <section class="section" id="problem">
+        <p class="eyebrow">Why BASECAMP</p>
+        <h2>Most people do not fail from lack of effort. They fail from lack of a system.</h2>
+        <p>
+          Motivation fades. Discipline stays. BASECAMP gives you a clear process,
+          daily action, and direct accountability so progress is measurable week after week.
+        </p>
+      </section>
+
+      <section class="section move-spotlight" id="framework">
+        <p class="eyebrow">MOVE Framework</p>
+        <h2>The MOVE Principles</h2>
+        <p class="move-intro">The fundamental drivers of action that bridge the gap between where you are and where you want to be.</p>
+        <div class="move-grid">
+          <article class="move-card">
+            <h3>M</h3>
+            <h4>Movement</h4>
+            <p>Physical activity as the catalyst for mental clarity and emotional stability.</p>
+          </article>
+          <article class="move-card">
+            <h3>O</h3>
+            <h4>Ownership</h4>
+            <p>Taking complete responsibility for your choices, outcomes, and growth.</p>
+          </article>
+          <article class="move-card">
+            <h3>V</h3>
+            <h4>Vision</h4>
+            <p>Clear picture of who you want to become and what you want to achieve.</p>
+          </article>
+          <article class="move-card">
+            <h3>E</h3>
+            <h4>Execution</h4>
+            <p>Consistent action that bridges the gap between intention and reality.</p>
+          </article>
+        </div>
+        <p class="small-note">Structured system + daily action + accountability = transformation.</p>
+      </section>
+
+      <section class="section" id="who">
+        <p class="eyebrow">Who It Is For</p>
+        <h2>Adults in their 20s-50s who are building a family, growing a career, and want direction.</h2>
+        <p>
+          You might feel stretched, inconsistent, or stuck between priorities. BASECAMP helps
+          you build the systems that turn potential into real execution with practical routines
+          for energy, movement, and momentum.
+        </p>
+      </section>
+
+      <section class="section" id="discovery-process">
+        <p class="eyebrow">What Happens On The Free Discovery Call</p>
+        <div class="process-grid">
+          <article class="card">
+            <h3>1. Get Clear On Why You Reached Out</h3>
+            <p>We start with where life feels out of alignment and what you want to change first.</p>
+          </article>
+          <article class="card">
+            <h3>2. Define Your Goals And Direction</h3>
+            <p>We map the habits, routines, and outcomes you want to build in your next season.</p>
+          </article>
+          <article class="card">
+            <h3>3. Learn About The BASECAMP Approach</h3>
+            <p>You will see how I coach and how the framework works in day-to-day life.</p>
+          </article>
+          <article class="card">
+            <h3>4. Decide Mutual Fit</h3>
+            <p>By the end, we both decide if this is the right program and next step for you.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section callout" id="discovery-call">
+        <p class="eyebrow">Free Discovery Call</p>
+        <h2>Let’s get to know each other and see if there is a fit.</h2>
+        <p>
+          Fill this out and I will follow up to schedule your free discovery session.
+          We will discuss where you are now, where you want to go, and whether BASECAMP is
+          the right support for this chapter.
+        </p>
+
+        <form id="discoveryForm" class="discovery-form">
+          <label for="fullName">Full Name</label>
+          <input id="fullName" name="fullName" type="text" required />
+
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required />
+
+          <label for="phone">Phone (optional)</label>
+          <input id="phone" name="phone" type="tel" />
+
+          <label for="goal">What do you want to change in the next 8 weeks?</label>
+          <textarea id="goal" name="goal" rows="4" required></textarea>
+
+          <label for="timeWindow">Best time for a call</label>
+          <input id="timeWindow" name="timeWindow" type="text" placeholder="Example: Weekdays after 4 PM ET" required />
+
+          <button class="btn" type="submit">Send Discovery Request</button>
+          <p class="form-note" id="formNote" aria-live="polite"></p>
+        </form>
+
+        <a id="calendlyLink" class="btn btn-ghost" href="https://calendly.com/basecampconsultants/basecamp-discovery-session" target="_blank" rel="noreferrer noopener">Book Directly On Calendly</a>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>Choose your hard. Build your base.</p>
+      <p>&copy; <span id="year"></span> BASECAMP Consultants LLC</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
