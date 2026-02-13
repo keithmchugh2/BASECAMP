@@ -20,3 +20,13 @@ services:
         sync: false
       - key: BASECAMP_STRIPE_WEBHOOK_SECRET
         sync: false
+      - key: BASECAMP_SMTP_HOST
+        value: smtp.gmail.com
+      - key: BASECAMP_SMTP_PORT
+        value: "465"
+      - key: BASECAMP_SMTP_USER
+        sync: false
+      - key: BASECAMP_SMTP_PASSWORD
+        sync: false
+      - key: BASECAMP_EMAIL_FROM
+        sync: false

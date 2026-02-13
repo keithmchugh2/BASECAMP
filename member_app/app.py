@@ -1,8 +1,14 @@
 import os
 import sqlite3
+import threading
+import time
+import smtplib
+import ssl
 from datetime import datetime
 from functools import wraps
+from email.message import EmailMessage
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from flask import (
     Flask,
@@ -18,6 +24,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "basecamp_app.db"
+_reminder_thread_started = False
 
 
 def create_app():
@@ -26,6 +33,14 @@ def create_app():
     app.config["STRIPE_PRICE_ID"] = os.getenv("BASECAMP_STRIPE_PRICE_ID", "")
     app.config["STRIPE_PUBLISHABLE_KEY"] = os.getenv("BASECAMP_STRIPE_PUBLISHABLE_KEY", "")
     app.config["STRIPE_WEBHOOK_SECRET"] = os.getenv("BASECAMP_STRIPE_WEBHOOK_SECRET", "")
+    app.config["SMTP_HOST"] = os.getenv("BASECAMP_SMTP_HOST", "smtp.gmail.com")
+    app.config["SMTP_PORT"] = int(os.getenv("BASECAMP_SMTP_PORT", "465"))
+    app.config["SMTP_USER"] = os.getenv("BASECAMP_SMTP_USER", os.getenv("BASECAMP_GMAIL_USER", ""))
+    app.config["SMTP_PASSWORD"] = os.getenv(
+        "BASECAMP_SMTP_PASSWORD",
+        os.getenv("BASECAMP_GMAIL_APP_PASSWORD", ""),
+    )
+    app.config["EMAIL_FROM"] = os.getenv("BASECAMP_EMAIL_FROM", app.config["SMTP_USER"] or "no-reply@basecamp.local")
 
     def get_db():
         if "db" not in g:
@@ -89,8 +104,46 @@ def create_app():
                 signup_url TEXT,
                 created_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS daily_tracker_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                entry_date TEXT NOT NULL,
+                gratitude TEXT NOT NULL,
+                affirmations TEXT NOT NULL,
+                intentions TEXT NOT NULL,
+                focus TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(user_id, entry_date),
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS daily_tracker_settings (
+                user_id INTEGER PRIMARY KEY,
+                reminder_time TEXT NOT NULL DEFAULT '07:00',
+                reminders_enabled INTEGER NOT NULL DEFAULT 1,
+                email_reminders_enabled INTEGER NOT NULL DEFAULT 0,
+                reminder_timezone TEXT NOT NULL DEFAULT 'UTC',
+                last_email_sent_date TEXT,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            );
             """
         )
+        columns = {
+            row[1] for row in db.execute("PRAGMA table_info(daily_tracker_settings)").fetchall()
+        }
+        if "email_reminders_enabled" not in columns:
+            db.execute(
+                "ALTER TABLE daily_tracker_settings ADD COLUMN email_reminders_enabled INTEGER NOT NULL DEFAULT 0"
+            )
+        if "reminder_timezone" not in columns:
+            db.execute(
+                "ALTER TABLE daily_tracker_settings ADD COLUMN reminder_timezone TEXT NOT NULL DEFAULT 'UTC'"
+            )
+        if "last_email_sent_date" not in columns:
+            db.execute("ALTER TABLE daily_tracker_settings ADD COLUMN last_email_sent_date TEXT")
         db.commit()
 
         admin_email = os.getenv("BASECAMP_ADMIN_EMAIL", "admin@basecamp.local")
@@ -121,6 +174,130 @@ def create_app():
         db.close()
 
     init_db()
+
+    def send_reminder_email(to_email, full_name):
+        smtp_user = app.config["SMTP_USER"]
+        smtp_password = app.config["SMTP_PASSWORD"]
+        if not smtp_user or not smtp_password:
+            return False
+
+        msg = EmailMessage()
+        msg["Subject"] = "BASECAMP Daily Tracker Reminder"
+        msg["From"] = app.config["EMAIL_FROM"]
+        msg["To"] = to_email
+        msg.set_content(
+            f"""Hi {full_name},
+
+Quick reminder to complete your BASECAMP Daily Tracker:
+- Gratitude
+- Affirmations
+- Intentions
+- Today's Focus
+
+Open your member app and lock in your day.
+
+BASECAMP
+"""
+        )
+
+        try:
+            if app.config["SMTP_PORT"] == 465:
+                with smtplib.SMTP_SSL(app.config["SMTP_HOST"], app.config["SMTP_PORT"], context=ssl.create_default_context()) as server:
+                    server.login(smtp_user, smtp_password)
+                    server.send_message(msg)
+            else:
+                with smtplib.SMTP(app.config["SMTP_HOST"], app.config["SMTP_PORT"]) as server:
+                    server.starttls(context=ssl.create_default_context())
+                    server.login(smtp_user, smtp_password)
+                    server.send_message(msg)
+            return True
+        except Exception:
+            return False
+
+    def run_email_reminder_worker():
+        while True:
+            try:
+                db = sqlite3.connect(DB_PATH)
+                db.row_factory = sqlite3.Row
+                candidates = db.execute(
+                    """
+                    SELECT
+                        users.id AS user_id,
+                        users.full_name,
+                        users.email,
+                        daily_tracker_settings.reminder_time,
+                        daily_tracker_settings.reminder_timezone,
+                        daily_tracker_settings.last_email_sent_date
+                    FROM daily_tracker_settings
+                    JOIN users ON users.id = daily_tracker_settings.user_id
+                    WHERE daily_tracker_settings.email_reminders_enabled = 1
+                    """
+                ).fetchall()
+
+                for row in candidates:
+                    tz_name = row["reminder_timezone"] or "UTC"
+                    try:
+                        tz = ZoneInfo(tz_name)
+                    except Exception:
+                        tz = ZoneInfo("UTC")
+
+                    now_local = datetime.now(tz)
+                    today_local = now_local.date().isoformat()
+                    reminder_time = (row["reminder_time"] or "07:00").strip()
+                    hhmm = now_local.strftime("%H:%M")
+
+                    if hhmm != reminder_time:
+                        continue
+                    if row["last_email_sent_date"] == today_local:
+                        continue
+
+                    entry = db.execute(
+                        """
+                        SELECT id
+                        FROM daily_tracker_entries
+                        WHERE user_id = ? AND entry_date = ?
+                        """,
+                        (row["user_id"], today_local),
+                    ).fetchone()
+                    if entry:
+                        db.execute(
+                            """
+                            UPDATE daily_tracker_settings
+                            SET last_email_sent_date = ?, updated_at = ?
+                            WHERE user_id = ?
+                            """,
+                            (today_local, datetime.utcnow().isoformat(timespec="seconds"), row["user_id"]),
+                        )
+                        db.commit()
+                        continue
+
+                    sent = send_reminder_email(row["email"], row["full_name"])
+                    if sent:
+                        db.execute(
+                            """
+                            UPDATE daily_tracker_settings
+                            SET last_email_sent_date = ?, updated_at = ?
+                            WHERE user_id = ?
+                            """,
+                            (today_local, datetime.utcnow().isoformat(timespec="seconds"), row["user_id"]),
+                        )
+                        db.commit()
+
+                db.close()
+            except Exception:
+                pass
+
+            time.sleep(60)
+
+    def start_reminder_worker_once():
+        global _reminder_thread_started
+        if _reminder_thread_started:
+            return
+        _reminder_thread_started = True
+        thread = threading.Thread(target=run_email_reminder_worker, daemon=True)
+        thread.start()
+
+    start_reminder_worker_once()
 
     def current_user():
         user_id = session.get("user_id")
@@ -232,6 +409,7 @@ def create_app():
     def dashboard():
         user = current_user()
         db = get_db()
+        today = datetime.utcnow().date().isoformat()
         my_workouts = db.execute(
             "SELECT id, title, week_label, created_at FROM workouts WHERE user_id = ? ORDER BY id DESC LIMIT 4",
             (user["id"],),
@@ -240,12 +418,147 @@ def create_app():
             "SELECT id, title, event_date, location FROM events ORDER BY event_date ASC, id DESC LIMIT 4"
         ).fetchall()
         mastermind_count = db.execute("SELECT COUNT(*) AS count FROM mastermind_posts").fetchone()["count"]
+        today_tracker = db.execute(
+            "SELECT id FROM daily_tracker_entries WHERE user_id = ? AND entry_date = ?",
+            (user["id"], today),
+        ).fetchone()
 
         return render_template(
             "dashboard.html",
             my_workouts=my_workouts,
             upcoming_events=upcoming_events,
             mastermind_count=mastermind_count,
+            today_tracker_complete=bool(today_tracker),
+            today=today,
+        )
+
+    @app.route("/daily-tracker", methods=["GET", "POST"])
+    @login_required
+    def daily_tracker():
+        user = current_user()
+        db = get_db()
+        today = datetime.utcnow().date().isoformat()
+
+        if request.method == "POST":
+            action = request.form.get("action", "").strip()
+            now = datetime.utcnow().isoformat(timespec="seconds")
+
+            if action == "save_entry":
+                entry_date = request.form.get("entry_date", "").strip()
+                gratitude = request.form.get("gratitude", "").strip()
+                affirmations = request.form.get("affirmations", "").strip()
+                intentions = request.form.get("intentions", "").strip()
+                focus = request.form.get("focus", "").strip()
+
+                if not entry_date:
+                    entry_date = today
+                if len(entry_date) != 10:
+                    entry_date = today
+
+                if not gratitude or not affirmations or not intentions or not focus:
+                    flash("Please complete all 4 sections before saving.", "warning")
+                    return redirect(url_for("daily_tracker"))
+
+                db.execute(
+                    """
+                    INSERT INTO daily_tracker_entries (
+                        user_id, entry_date, gratitude, affirmations, intentions, focus, created_at, updated_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id, entry_date) DO UPDATE SET
+                        gratitude = excluded.gratitude,
+                        affirmations = excluded.affirmations,
+                        intentions = excluded.intentions,
+                        focus = excluded.focus,
+                        updated_at = excluded.updated_at
+                    """,
+                    (user["id"], entry_date, gratitude, affirmations, intentions, focus, now, now),
+                )
+                db.commit()
+                flash("Daily tracker saved.", "success")
+                return redirect(url_for("daily_tracker", date=entry_date))
+
+            if action == "save_reminder":
+                reminder_time = request.form.get("reminder_time", "07:00").strip()
+                reminders_enabled = 1 if request.form.get("reminders_enabled") == "on" else 0
+                email_reminders_enabled = 1 if request.form.get("email_reminders_enabled") == "on" else 0
+                reminder_timezone = request.form.get("reminder_timezone", "UTC").strip() or "UTC"
+                if len(reminder_time) != 5 or ":" not in reminder_time:
+                    reminder_time = "07:00"
+
+                db.execute(
+                    """
+                    INSERT INTO daily_tracker_settings (
+                        user_id, reminder_time, reminders_enabled, email_reminders_enabled, reminder_timezone, updated_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        reminder_time = excluded.reminder_time,
+                        reminders_enabled = excluded.reminders_enabled,
+                        email_reminders_enabled = excluded.email_reminders_enabled,
+                        reminder_timezone = excluded.reminder_timezone,
+                        updated_at = excluded.updated_at
+                    """,
+                    (user["id"], reminder_time, reminders_enabled, email_reminders_enabled, reminder_timezone, now),
+                )
+                db.commit()
+                flash("Reminder settings saved.", "success")
+                return redirect(url_for("daily_tracker"))
+
+        selected_date = request.args.get("date", today).strip()
+        if len(selected_date) != 10:
+            selected_date = today
+
+        selected_entry = db.execute(
+            """
+            SELECT *
+            FROM daily_tracker_entries
+            WHERE user_id = ? AND entry_date = ?
+            """,
+            (user["id"], selected_date),
+        ).fetchone()
+
+        recent_entries = db.execute(
+            """
+            SELECT entry_date, gratitude, affirmations, intentions, focus, updated_at
+            FROM daily_tracker_entries
+            WHERE user_id = ?
+            ORDER BY entry_date DESC
+            LIMIT 7
+            """,
+            (user["id"],),
+        ).fetchall()
+
+        reminder_settings = db.execute(
+            """
+            SELECT reminder_time, reminders_enabled, email_reminders_enabled, reminder_timezone
+            FROM daily_tracker_settings
+            WHERE user_id = ?
+            """,
+            (user["id"],),
+        ).fetchone()
+
+        reminder_time = reminder_settings["reminder_time"] if reminder_settings else "07:00"
+        reminders_enabled = reminder_settings["reminders_enabled"] if reminder_settings else 1
+        email_reminders_enabled = reminder_settings["email_reminders_enabled"] if reminder_settings else 0
+        reminder_timezone = reminder_settings["reminder_timezone"] if reminder_settings else "UTC"
+
+        today_entry = db.execute(
+            "SELECT id FROM daily_tracker_entries WHERE user_id = ? AND entry_date = ?",
+            (user["id"], today),
+        ).fetchone()
+
+        return render_template(
+            "daily_tracker.html",
+            selected_date=selected_date,
+            selected_entry=selected_entry,
+            recent_entries=recent_entries,
+            reminder_time=reminder_time,
+            reminders_enabled=bool(reminders_enabled),
+            email_reminders_enabled=bool(email_reminders_enabled),
+            reminder_timezone=reminder_timezone,
+            today=today,
+            today_complete=bool(today_entry),
         )
 
     @app.get("/resources")

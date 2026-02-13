@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap");
+
 :root {
   --bg: #0f2019;
   --surface: #f4f8f3;
@@ -17,6 +19,11 @@ body {
   font-family: "Manrope", sans-serif;
   background: linear-gradient(140deg, #10271f, #1c4c38);
   color: #eef7f0;
+}
+
+h1, h2, h3, .tracker-kicker {
+  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+  letter-spacing: 0.02em;
 }
 
 a { color: #1e6848; }
@@ -124,6 +131,13 @@ button {
   cursor: pointer;
 }
 
+.btn-outline {
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+}
+
 .inline-form {
   display: grid;
   grid-template-columns: 1.7fr auto auto auto;
@@ -146,6 +160,44 @@ button {
 .flash.danger { background: #f6d9d9; color: var(--danger); }
 
 .muted { color: var(--ink-soft); }
+
+.tracker-hero {
+  background: linear-gradient(135deg, rgba(46, 128, 89, 0.16), rgba(46, 128, 89, 0.04)), var(--surface);
+}
+
+.tracker-kicker {
+  margin: 0;
+  font-size: 1rem;
+  text-transform: uppercase;
+  color: #255f43;
+}
+
+.tracker-status {
+  display: inline-block;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.status-done {
+  background: #d8efdf;
+  color: #226145;
+}
+
+.status-open {
+  background: #f8efcf;
+  color: #7a590f;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.tracker-item p {
+  margin: 0.25rem 0;
+}
 
 @media (max-width: 900px) {
   .grid-2, .kpis { grid-template-columns: 1fr; }

@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% block title %}Daily Tracker | BASECAMP{% endblock %}
+{% block content %}
+<section class="card tracker-hero">
+  <p class="tracker-kicker">BASECAMP Daily Discipline</p>
+  <h1>Gratitude + Affirmations + Intentions + Today's Focus</h1>
+  <p class="muted">Keep it simple. Complete this once daily and lock in your direction.</p>
+  {% if today_complete %}
+    <p class="tracker-status status-done">Today is complete.</p>
+  {% else %}
+    <p class="tracker-status status-open">Today is still open. Fill it out now.</p>
+  {% endif %}
+</section>
+
+<section class="grid-2">
+  <article class="card">
+    <h2>Daily Entry</h2>
+    <form method="post" class="stack">
+      <input type="hidden" name="action" value="save_entry" />
+      <label>Date
+        <input id="entryDate" name="entry_date" type="date" value="{{ selected_date }}" required />
+      </label>
+      <label>Gratitude
+        <textarea name="gratitude" rows="3" placeholder="What are 3 things you're grateful for?" required>{{ selected_entry['gratitude'] if selected_entry else '' }}</textarea>
+      </label>
+      <label>Affirmations
+        <textarea name="affirmations" rows="3" placeholder="What do you need to hear today?" required>{{ selected_entry['affirmations'] if selected_entry else '' }}</textarea>
+      </label>
+      <label>Intentions
+        <textarea name="intentions" rows="3" placeholder="How do you intend to show up today?" required>{{ selected_entry['intentions'] if selected_entry else '' }}</textarea>
+      </label>
+      <label>Today's Focus
+        <textarea name="focus" rows="3" placeholder="What is the single most important focus today?" required>{{ selected_entry['focus'] if selected_entry else '' }}</textarea>
+      </label>
+      <button type="submit">Save Daily Tracker</button>
+    </form>
+  </article>
+
+  <article class="card">
+    <h2>Daily Reminder</h2>
+    <p class="muted">Enable a browser reminder so this stays consistent.</p>
+    <form method="post" class="stack">
+      <input type="hidden" name="action" value="save_reminder" />
+      <input id="reminderTimezone" name="reminder_timezone" type="hidden" value="{{ reminder_timezone }}" />
+      <label>Reminder Time
+        <input id="reminderTime" name="reminder_time" type="time" value="{{ reminder_time }}" required />
+      </label>
+      <label class="toggle-label">
+        <input id="reminderEnabled" name="reminders_enabled" type="checkbox" {% if reminders_enabled %}checked{% endif %} />
+        Enable daily reminder
+      </label>
+      <label class="toggle-label">
+        <input name="email_reminders_enabled" type="checkbox" {% if email_reminders_enabled %}checked{% endif %} />
+        Send reminder by email
+      </label>
+      <p class="muted">Email reminders use your account email: <strong>{{ current_user['email'] }}</strong></p>
+      <p class="muted">Timezone for reminders: <strong id="tzLabel">{{ reminder_timezone }}</strong></p>
+      <button type="submit">Save Reminder</button>
+    </form>
+
+    <button id="notificationBtn" class="btn-outline" type="button">Allow Browser Notifications</button>
+    <p id="notificationNote" class="muted">If notifications are blocked, this page still shows in-app reminder status.</p>
+  </article>
+</section>
+
+<section class="card">
+  <h2>Last 7 Entries</h2>
+  {% if recent_entries %}
+    <div class="stack">
+      {% for item in recent_entries %}
+      <article class="item tracker-item">
+        <p><strong>{{ item['entry_date'] }}</strong></p>
+        <p><strong>Gratitude:</strong> {{ item['gratitude'] }}</p>
+        <p><strong>Affirmations:</strong> {{ item['affirmations'] }}</p>
+        <p><strong>Intentions:</strong> {{ item['intentions'] }}</p>
+        <p><strong>Focus:</strong> {{ item['focus'] }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">No entries yet. Start with today.</p>
+  {% endif %}
+</section>
+
+<script>
+  (function () {
+    const notifBtn = document.getElementById("notificationBtn");
+    const notifNote = document.getElementById("notificationNote");
+    const reminderTimeInput = document.getElementById("reminderTime");
+    const reminderEnabledInput = document.getElementById("reminderEnabled");
+    const reminderTimezoneInput = document.getElementById("reminderTimezone");
+    const tzLabel = document.getElementById("tzLabel");
+    const entryDateInput = document.getElementById("entryDate");
+    const today = "{{ today }}";
+    const todayComplete = {{ "true" if today_complete else "false" }};
+
+    if (entryDateInput && !entryDateInput.value) {
+      entryDateInput.value = today;
+    }
+    if (reminderTimezoneInput && "Intl" in window && Intl.DateTimeFormat) {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      reminderTimezoneInput.value = tz;
+      if (tzLabel) {
+        tzLabel.textContent = tz;
+      }
+    }
+
+    function notifyNow() {
+      if (!("Notification" in window) || Notification.permission !== "granted") {
+        return;
+      }
+      new Notification("BASECAMP Daily Tracker", {
+        body: "Complete Gratitude, Affirmations, Intentions, and Today's Focus."
+      });
+    }
+
+    function msUntilNext(timeString) {
+      const parts = timeString.split(":");
+      if (parts.length !== 2) return null;
+      const h = Number(parts[0]);
+      const m = Number(parts[1]);
+      if (Number.isNaN(h) || Number.isNaN(m)) return null;
+
+      const now = new Date();
+      const next = new Date();
+      next.setHours(h, m, 0, 0);
+      if (next <= now) {
+        next.setDate(next.getDate() + 1);
+      }
+      return next.getTime() - now.getTime();
+    }
+
+    function scheduleDailyReminder() {
+      if (!reminderEnabledInput || !reminderEnabledInput.checked) {
+        return;
+      }
+      const delay = msUntilNext(reminderTimeInput.value);
+      if (delay === null) {
+        return;
+      }
+      setTimeout(function () {
+        notifyNow();
+        setInterval(notifyNow, 24 * 60 * 60 * 1000);
+      }, delay);
+    }
+
+    if (notifBtn) {
+      notifBtn.addEventListener("click", function () {
+        if (!("Notification" in window)) {
+          notifNote.textContent = "Notifications are not supported in this browser.";
+          return;
+        }
+        Notification.requestPermission().then(function (permission) {
+          if (permission === "granted") {
+            notifNote.textContent = "Notifications enabled.";
+            notifyNow();
+          } else {
+            notifNote.textContent = "Notifications are blocked. You can still use in-app reminders here daily.";
+          }
+        });
+      });
+    }
+
+    if (!todayComplete) {
+      notifNote.textContent = "Reminder: today's tracker is not complete yet.";
+    }
+    scheduleDailyReminder();
+  })();
+</script>
+{% endblock %}

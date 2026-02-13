@@ -26,6 +26,11 @@ pip install -r requirements-member-app.txt
 export BASECAMP_APP_SECRET="replace-with-random-secret"
 export BASECAMP_ADMIN_EMAIL="basecampconsultants@gmail.com"
 export BASECAMP_ADMIN_PASSWORD="ChangeThisNow123!"
+export BASECAMP_SMTP_HOST="smtp.gmail.com"
+export BASECAMP_SMTP_PORT="465"
+export BASECAMP_SMTP_USER="basecampconsultants@gmail.com"
+export BASECAMP_SMTP_PASSWORD="your_google_app_password_here"
+export BASECAMP_EMAIL_FROM="basecampconsultants@gmail.com"
 ```
 
 3. Run app:

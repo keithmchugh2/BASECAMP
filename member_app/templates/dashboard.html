@@ -4,6 +4,7 @@
 <section class="card">
   <h1>Welcome, {{ current_user['full_name'] }}</h1>
   <p class="muted">Member status: <strong>{% if current_user['is_paid'] or current_user['is_admin'] %}Paid Active{% else %}Pending Activation{% endif %}</strong></p>
+  <p class="muted">Daily tracker for {{ today }}: <strong>{% if today_tracker_complete %}Complete{% else %}Not complete yet{% endif %}</strong> - <a href="{{ url_for('daily_tracker') }}">Open tracker</a></p>
   <div class="kpis">
     <div><h3>{{ my_workouts|length }}</h3><p>Recent Workouts</p></div>
     <div><h3>{{ upcoming_events|length }}</h3><p>Upcoming Events</p></div>
