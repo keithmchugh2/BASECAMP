@@ -48,6 +48,10 @@ def create_app():
             g.db.row_factory = sqlite3.Row
         return g.db
 
+    def hash_password(raw_password):
+        # Use PBKDF2 for compatibility on environments where hashlib.scrypt is unavailable.
+        return generate_password_hash(raw_password, method="pbkdf2:sha256")
+
     @app.teardown_appcontext
     def close_db(exc):
         db = g.pop("db", None)
@@ -157,7 +161,7 @@ def create_app():
                 INSERT INTO users (full_name, email, password_hash, is_paid, is_admin, mastermind_opt_in, created_at)
                 VALUES (?, ?, ?, 1, 1, 1, ?)
                 """,
-                ("BASECAMP Admin", admin_email, generate_password_hash(admin_password), now),
+                ("BASECAMP Admin", admin_email, hash_password(admin_password), now),
             )
             db.commit()
         else:
@@ -168,7 +172,7 @@ def create_app():
                 SET password_hash = ?, is_paid = 1, is_admin = 1
                 WHERE email = ?
                 """,
-                (generate_password_hash(admin_password), admin_email),
+                (hash_password(admin_password), admin_email),
             )
             db.commit()
         db.close()
@@ -374,7 +378,7 @@ BASECAMP
                 INSERT INTO users (full_name, email, password_hash, is_paid, is_admin, mastermind_opt_in, created_at)
                 VALUES (?, ?, ?, 0, 0, 0, ?)
                 """,
-                (full_name, email, generate_password_hash(password), datetime.utcnow().isoformat(timespec="seconds")),
+                (full_name, email, hash_password(password), datetime.utcnow().isoformat(timespec="seconds")),
             )
             db.commit()
             flash("Account created. Keith will activate your paid-member access after signup.", "success")
@@ -743,7 +747,7 @@ BASECAMP
                     SET password_hash = ?, is_paid = 1, is_admin = 1
                     WHERE email = ?
                     """,
-                    (generate_password_hash(password), email),
+                    (hash_password(password), email),
                 )
             else:
                 db.execute(
@@ -751,7 +755,7 @@ BASECAMP
                     INSERT INTO users (full_name, email, password_hash, is_paid, is_admin, mastermind_opt_in, created_at)
                     VALUES (?, ?, ?, 1, 1, 1, ?)
                     """,
-                    ("BASECAMP Admin", email, generate_password_hash(password), now),
+                    ("BASECAMP Admin", email, hash_password(password), now),
                 )
             db.commit()
             flash("Admin credentials reset. You can now log in.", "success")
